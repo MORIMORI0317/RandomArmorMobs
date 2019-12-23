@@ -8,13 +8,13 @@ issueTrackerURL="http://my.issue.tracker/"
 
 modId="randomarmormobs" 
 
-version="1.0.0" 
+version="1.0" 
 
 displayName="RandomArmorMobs" 
 
 updateJSONURL="http://myurl.me/" 
 
-displayURL="" 
+displayURL="https://www.curseforge.com/minecraft/mc-mods/randomarmormobs" 
 
 logoFile="randomarmormobs.png" 
 
