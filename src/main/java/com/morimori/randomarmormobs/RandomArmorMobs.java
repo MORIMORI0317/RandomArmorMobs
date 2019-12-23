@@ -9,24 +9,25 @@ import java.util.Set;
 
 import com.google.common.collect.Lists;
 
-import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.monster.AbstractSkeleton;
-import net.minecraft.entity.monster.EntityVindicator;
-import net.minecraft.entity.monster.EntityZombie;
-import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.monster.SkeletonEntity;
+import net.minecraft.entity.monster.ZombieEntity;
+import net.minecraft.inventory.EquipmentSlotType;
+import net.minecraft.item.ArmorItem;
+import net.minecraft.item.AxeItem;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.FishingRodItem;
+import net.minecraft.item.HoeItem;
 import net.minecraft.item.IArmorMaterial;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemArmor;
-import net.minecraft.item.ItemAxe;
-import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemFishingRod;
-import net.minecraft.item.ItemHoe;
-import net.minecraft.item.ItemPickaxe;
-import net.minecraft.item.ItemShield;
-import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
-import net.minecraft.item.ItemTrident;
+import net.minecraft.item.PickaxeItem;
+import net.minecraft.item.ShieldItem;
+import net.minecraft.item.ShovelItem;
+import net.minecraft.item.SwordItem;
+import net.minecraft.item.TridentItem;
+import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.Tag;
 import net.minecraft.util.ResourceLocation;
@@ -53,6 +54,11 @@ public class RandomArmorMobs {
 	HashMap<IArmorMaterial, Item> Feet_map = new HashMap<IArmorMaterial, Item>();
 	Set<IArmorMaterial> ArmorMaterials = new HashSet<IArmorMaterial>();
 
+	public static final Tag<EntityType<?>> WHITELIST = new EntityTypeTags.Wrapper(
+			new ResourceLocation("randomarmormobs", "whitelist"));
+	public static final Tag<EntityType<?>> BLACKLIST = new EntityTypeTags.Wrapper(
+			new ResourceLocation("randomarmormobs", "blacklist"));
+
 	public static final Tag<Item> MAINHANDITEM = new ItemTags.Wrapper(
 			new ResourceLocation("randomarmormobs", "mainhanditem"));
 
@@ -67,40 +73,40 @@ public class RandomArmorMobs {
 
 	private void processIMC(final InterModProcessEvent event) {
 		for (Item i : ForgeRegistries.ITEMS) {
-			if (i instanceof ItemArmor)
-				switch (((ItemArmor) i).getEquipmentSlot()) {
+			if (i instanceof ArmorItem)
+				switch (((ArmorItem) i).getEquipmentSlot()) {
 				case CHEST:
 					Chest.add(i);
-					Chest_map.put((((ItemArmor) i).getArmorMaterial()), i);
-					ArmorMaterials.add(((ItemArmor) i).getArmorMaterial());
+					Chest_map.put((((ArmorItem) i).getArmorMaterial()), i);
+					ArmorMaterials.add(((ArmorItem) i).getArmorMaterial());
 					break;
 				case FEET:
 					Feet.add(i);
-					Feet_map.put((((ItemArmor) i).getArmorMaterial()), i);
-					ArmorMaterials.add(((ItemArmor) i).getArmorMaterial());
+					Feet_map.put((((ArmorItem) i).getArmorMaterial()), i);
+					ArmorMaterials.add(((ArmorItem) i).getArmorMaterial());
 					break;
 				case HEAD:
 					Head.add(i);
-					Head_map.put((((ItemArmor) i).getArmorMaterial()), i);
-					ArmorMaterials.add(((ItemArmor) i).getArmorMaterial());
+					Head_map.put((((ArmorItem) i).getArmorMaterial()), i);
+					ArmorMaterials.add(((ArmorItem) i).getArmorMaterial());
 					break;
 				case LEGS:
 					Legs.add(i);
-					Legs_map.put((((ItemArmor) i).getArmorMaterial()), i);
-					ArmorMaterials.add(((ItemArmor) i).getArmorMaterial());
+					Legs_map.put((((ArmorItem) i).getArmorMaterial()), i);
+					ArmorMaterials.add(((ArmorItem) i).getArmorMaterial());
 					break;
 				default:
 					break;
 				}
 
-			if (i instanceof ItemSword || i instanceof ItemAxe || i instanceof ItemPickaxe || i instanceof ItemSpade
-					|| i instanceof ItemHoe || i instanceof ItemFishingRod || i instanceof ItemTrident)
+			if (i instanceof SwordItem || i instanceof AxeItem || i instanceof PickaxeItem || i instanceof ShovelItem
+					|| i instanceof HoeItem || i instanceof FishingRodItem || i instanceof TridentItem)
 				MainHand.add(i);
 
-			if (i instanceof ItemShield)
+			if (i instanceof ShieldItem)
 				OffHand.add(i);
 
-			if (i instanceof ItemBlock)
+			if (i instanceof BlockItem)
 				Block.add(i);
 
 		}
@@ -111,10 +117,10 @@ public class RandomArmorMobs {
 	public void onMobSpawn(LivingSpawnEvent.SpecialSpawn e) {
 		Random r = new Random();
 
-		EntityLiving enty = (EntityLiving) e.getEntityLiving();
+		LivingEntity enty = e.getEntityLiving();
 
-		if (enty instanceof EntityZombie || enty instanceof AbstractSkeleton || enty instanceof EntityVindicator
-				|| enty instanceof EntityVindicator) {
+		if ((enty instanceof ZombieEntity || enty instanceof SkeletonEntity || WHITELIST.contains(enty.getType()))
+				&& !BLACKLIST.contains(enty.getType())) {
 			if (RAMConfig.Probability.get() >= 1) {
 				if (r.nextInt(RAMConfig.Probability.get()) == 0) {
 
@@ -182,32 +188,32 @@ public class RandomArmorMobs {
 
 	}
 
-	public void setEquipment(EntityLiving entityIn, ItemStack mainhand, ItemStack offhand, ItemStack head,
+	public void setEquipment(LivingEntity entityIn, ItemStack mainhand, ItemStack offhand, ItemStack head,
 			ItemStack chest,
 			ItemStack legs, ItemStack feet) {
 		if (RAMConfig.isMainHand.get() && (entityIn.getHeldItemMainhand().isEmpty()) || RAMConfig.isReplace.get()) {
-			entityIn.setItemStackToSlot(EntityEquipmentSlot.MAINHAND, mainhand);
+			entityIn.setItemStackToSlot(EquipmentSlotType.MAINHAND, mainhand);
 		}
 		if (RAMConfig.isOffHand.get() && (entityIn.getHeldItemOffhand().isEmpty()) || RAMConfig.isReplace.get()) {
-			entityIn.setItemStackToSlot(EntityEquipmentSlot.OFFHAND, offhand);
+			entityIn.setItemStackToSlot(EquipmentSlotType.OFFHAND, offhand);
 		}
 
 		if (RAMConfig.isHead.get() && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(3).isEmpty()
 				|| RAMConfig.isReplace.get()) {
-			entityIn.setItemStackToSlot(EntityEquipmentSlot.HEAD, head);
+			entityIn.setItemStackToSlot(EquipmentSlotType.HEAD, head);
 		}
 		if (RAMConfig.isChest.get()
 				&& (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(2).isEmpty()
 				|| RAMConfig.isReplace.get()) {
-			entityIn.setItemStackToSlot(EntityEquipmentSlot.CHEST, chest);
+			entityIn.setItemStackToSlot(EquipmentSlotType.CHEST, chest);
 		}
 		if (RAMConfig.isLegs.get() && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(1).isEmpty()
 				|| RAMConfig.isReplace.get()) {
-			entityIn.setItemStackToSlot(EntityEquipmentSlot.LEGS, legs);
+			entityIn.setItemStackToSlot(EquipmentSlotType.LEGS, legs);
 		}
 		if (RAMConfig.isFeet.get() && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(0).isEmpty()
 				|| RAMConfig.isReplace.get()) {
-			entityIn.setItemStackToSlot(EntityEquipmentSlot.FEET, feet);
+			entityIn.setItemStackToSlot(EquipmentSlotType.FEET, feet);
 		}
 	}
 }
