@@ -13,8 +13,8 @@ import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.monster.AbstractSkeleton;
 import net.minecraft.entity.monster.EntityVindicator;
 import net.minecraft.entity.monster.EntityZombie;
-import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.item.IArmorMaterial;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemAxe;
@@ -26,45 +26,49 @@ import net.minecraft.item.ItemShield;
 import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
+import net.minecraft.item.ItemTrident;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.Tag;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.ForgeRegistries;
 
-@Mod(modid = "randomarmormobs", name = "RandomArmorMobs", version = "1.1", acceptedMinecraftVersions = "[1.10,1.12.2]")
+@Mod("randomarmormobs")
 public class RandomArmorMobs {
+	List<Item> Head = new ArrayList<Item>();
+	List<Item> Chest = new ArrayList<Item>();
+	List<Item> Legs = new ArrayList<Item>();
+	List<Item> Feet = new ArrayList<Item>();
+	List<Item> MainHand = new ArrayList<Item>();
+	List<Item> OffHand = new ArrayList<Item>();
+	List<Item> Block = new ArrayList<Item>();
+	HashMap<IArmorMaterial, Item> Head_map = new HashMap<IArmorMaterial, Item>();
+	HashMap<IArmorMaterial, Item> Chest_map = new HashMap<IArmorMaterial, Item>();
+	HashMap<IArmorMaterial, Item> Legs_map = new HashMap<IArmorMaterial, Item>();
+	HashMap<IArmorMaterial, Item> Feet_map = new HashMap<IArmorMaterial, Item>();
+	Set<IArmorMaterial> ArmorMaterials = new HashSet<IArmorMaterial>();
 
-	private static List<Item> Head = new ArrayList<Item>();
-	private static List<Item> Chest = new ArrayList<Item>();
-	private static List<Item> Legs = new ArrayList<Item>();
-	private static List<Item> Feet = new ArrayList<Item>();
-	private static List<Item> MainHand = new ArrayList<Item>();
-	private static List<Item> OffHand = new ArrayList<Item>();
-	private static List<Item> Block = new ArrayList<Item>();
-	private static HashMap<ItemArmor.ArmorMaterial, Item> Head_map = new HashMap<ItemArmor.ArmorMaterial, Item>();
-	private static HashMap<ItemArmor.ArmorMaterial, Item> Chest_map = new HashMap<ItemArmor.ArmorMaterial, Item>();
-	private static HashMap<ItemArmor.ArmorMaterial, Item> Legs_map = new HashMap<ItemArmor.ArmorMaterial, Item>();
-	private static HashMap<ItemArmor.ArmorMaterial, Item> Feet_map = new HashMap<ItemArmor.ArmorMaterial, Item>();
-	private static Set<ItemArmor.ArmorMaterial> ArmorMaterials = new HashSet<ItemArmor.ArmorMaterial>();
+	public static final Tag<Item> MAINHANDITEM = new ItemTags.Wrapper(
+			new ResourceLocation("randomarmormobs", "mainhanditem"));
 
-	@EventHandler
-	public void preInit(FMLPreInitializationEvent event) {
-		RAMConfig.load(event);
+	public static final Tag<Item> OFFHANDITEM = new ItemTags.Wrapper(
+			new ResourceLocation("randomarmormobs", "offhanditem"));
+
+	public RandomArmorMobs() {
+		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
+		MinecraftForge.EVENT_BUS.register(this);
+		RAMConfig.init();
 	}
 
-	@EventHandler
-	public void init(FMLInitializationEvent event) {
-
+	private void processIMC(final InterModProcessEvent event) {
 		for (Item i : ForgeRegistries.ITEMS) {
-			if (i instanceof ItemArmor) {
-				ItemArmor ia = (ItemArmor) i;
-
-				switch (ia.armorType) {
+			if (i instanceof ItemArmor)
+				switch (((ItemArmor) i).getEquipmentSlot()) {
 				case CHEST:
 					Chest.add(i);
 					Chest_map.put((((ItemArmor) i).getArmorMaterial()), i);
@@ -89,24 +93,17 @@ public class RandomArmorMobs {
 					break;
 				}
 
-			}
 			if (i instanceof ItemSword || i instanceof ItemAxe || i instanceof ItemPickaxe || i instanceof ItemSpade
-					|| i instanceof ItemHoe || i instanceof ItemFishingRod || i == Items.STICK)
+					|| i instanceof ItemHoe || i instanceof ItemFishingRod || i instanceof ItemTrident)
 				MainHand.add(i);
 
-			if (i instanceof ItemShield || i == Items.TOTEM_OF_UNDYING)
+			if (i instanceof ItemShield)
 				OffHand.add(i);
 
 			if (i instanceof ItemBlock)
 				Block.add(i);
+
 		}
-
-		MinecraftForge.EVENT_BUS.register(this);
-
-	}
-
-	@EventHandler
-	public void postInit(FMLPostInitializationEvent event) {
 
 	}
 
@@ -118,21 +115,21 @@ public class RandomArmorMobs {
 
 		if (enty instanceof EntityZombie || enty instanceof AbstractSkeleton || enty instanceof EntityVindicator
 				|| enty instanceof EntityVindicator) {
-			if (RAMConfig.Probability >= 1) {
-				if (r.nextInt(RAMConfig.Probability) == 0) {
+			if (RAMConfig.Probability.get() >= 1) {
+				if (r.nextInt(RAMConfig.Probability.get()) == 0) {
 
 					List<Item> MainHanditem = new ArrayList<Item>();
 					MainHanditem.addAll(MainHand);
-
+					MainHanditem.addAll(MAINHANDITEM.getAllElements());
 					List<Item> OffHanditem = new ArrayList<Item>();
 					OffHanditem.addAll(OffHand);
+					OffHanditem.addAll(OFFHANDITEM.getAllElements());
 
-					if (RAMConfig.isFullSet) {
-						List<ItemArmor.ArmorMaterial> aromerlist = new ArrayList<ItemArmor.ArmorMaterial>(
-								ArmorMaterials);
-						ItemArmor.ArmorMaterial aromer = aromerlist.get(r.nextInt(aromerlist.size()));
+					if (RAMConfig.isFullSet.get()) {
+						List<IArmorMaterial> aromerlist = new ArrayList<IArmorMaterial>(ArmorMaterials);
+						IArmorMaterial aromer = aromerlist.get(r.nextInt(aromerlist.size()));
 
-						if (RAMConfig.isRandomHeadBlock) {
+						if (RAMConfig.isRandomHeadBlock.get()) {
 
 							setEquipment(enty,
 									new ItemStack(MainHanditem.get(r.nextInt(MainHanditem.size()))),
@@ -154,7 +151,7 @@ public class RandomArmorMobs {
 
 						}
 					} else {
-						if (RAMConfig.isRandomHeadBlock) {
+						if (RAMConfig.isRandomHeadBlock.get()) {
 
 							setEquipment(enty,
 									new ItemStack(MainHanditem.get(r.nextInt(MainHanditem.size()))),
@@ -188,30 +185,29 @@ public class RandomArmorMobs {
 	public void setEquipment(EntityLiving entityIn, ItemStack mainhand, ItemStack offhand, ItemStack head,
 			ItemStack chest,
 			ItemStack legs, ItemStack feet) {
-		if (RAMConfig.isMainHand && (entityIn.getHeldItemMainhand().isEmpty()) || RAMConfig.isReplace) {
+		if (RAMConfig.isMainHand.get() && (entityIn.getHeldItemMainhand().isEmpty()) || RAMConfig.isReplace.get()) {
 			entityIn.setItemStackToSlot(EntityEquipmentSlot.MAINHAND, mainhand);
 		}
-		if (RAMConfig.isOffHand && (entityIn.getHeldItemOffhand().isEmpty()) || RAMConfig.isReplace) {
+		if (RAMConfig.isOffHand.get() && (entityIn.getHeldItemOffhand().isEmpty()) || RAMConfig.isReplace.get()) {
 			entityIn.setItemStackToSlot(EntityEquipmentSlot.OFFHAND, offhand);
 		}
 
-		if (RAMConfig.isHead && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(3).isEmpty()
-				|| RAMConfig.isReplace) {
+		if (RAMConfig.isHead.get() && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(3).isEmpty()
+				|| RAMConfig.isReplace.get()) {
 			entityIn.setItemStackToSlot(EntityEquipmentSlot.HEAD, head);
 		}
-		if (RAMConfig.isChest
+		if (RAMConfig.isChest.get()
 				&& (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(2).isEmpty()
-				|| RAMConfig.isReplace) {
+				|| RAMConfig.isReplace.get()) {
 			entityIn.setItemStackToSlot(EntityEquipmentSlot.CHEST, chest);
 		}
-		if (RAMConfig.isLegs && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(1).isEmpty()
-				|| RAMConfig.isReplace) {
+		if (RAMConfig.isLegs.get() && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(1).isEmpty()
+				|| RAMConfig.isReplace.get()) {
 			entityIn.setItemStackToSlot(EntityEquipmentSlot.LEGS, legs);
 		}
-		if (RAMConfig.isFeet && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(0).isEmpty()
-				|| RAMConfig.isReplace) {
+		if (RAMConfig.isFeet.get() && (Lists.newArrayList(entityIn.getArmorInventoryList().iterator())).get(0).isEmpty()
+				|| RAMConfig.isReplace.get()) {
 			entityIn.setItemStackToSlot(EntityEquipmentSlot.FEET, feet);
 		}
 	}
-
 }
